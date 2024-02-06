@@ -26,8 +26,11 @@ size_t Replace(std::string* str, const std::string& old_pattern,
 }
 
 void Usage(const CommandLine& cmdl) {
-    std::cerr << cmdl.Program() << " [--help] [--prefix=<string>] [--salt=<string>]" << std::endl;
-    std::cerr << "where" << std::endl;
+    std::cerr << "OVERVIEW:" << std::endl;
+    std::cerr << "  Rename symbols per line from stdin to stdout" << std::endl;
+    std::cerr << "USAGE:" << std::endl;
+    std::cerr << "  " << cmdl.Program() << " [--help] [--prefix=<string>] [--salt=<string>]" << std::endl;
+    std::cerr << "OPTIONS:" << std::endl;
     std::cerr << "  --help              Print this message." << std::endl;
     std::cerr << "  --prefix=<string>   Prepend <string> to all renamed symbols." << std::endl;
     std::cerr << "  --salt=<string>     Add <string> as salt of renaming encryption." << std::endl;
@@ -43,6 +46,7 @@ int main(int argc, const char** argv) {
 
     std::string prefix = "CXXSR_";
     std::string salt;
+    bool verbose = cmdl.HasSwitch("verbose");
 
     if (cmdl.HasSwitch("prefix")) {
         prefix = cmdl.GetSwitchValue("prefix");
@@ -50,6 +54,10 @@ int main(int argc, const char** argv) {
 
     if (cmdl.HasSwitch("salt")) {
         salt = cmdl.GetSwitchValue("salt");
+    }
+
+    if (verbose) {
+        std::cerr << "prefix=" << prefix << " salt=" << salt << std::endl;
     }
 
     std::vector<char> outbuf(2048);
