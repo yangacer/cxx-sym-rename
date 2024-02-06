@@ -1,3 +1,5 @@
+// Copyright 2024 Yun-Tse, Yang.
+// Distributed under the Boost Software License, Version 1.0.
 #include <iostream>
 #include <string>
 #include <vector>
@@ -6,6 +8,7 @@
 #include <functional>
 #include <sstream>
 #include "demangle.h"
+#include "command_line.h"
 
 struct Meta {
     std::string demangled;
@@ -22,7 +25,33 @@ size_t Replace(std::string* str, const std::string& old_pattern,
     return pos;
 }
 
-int main() {
+void Usage(const CommandLine& cmdl) {
+    std::cerr << cmdl.Program() << " [--help] [--prefix=<string>] [--salt=<string>]" << std::endl;
+    std::cerr << "where" << std::endl;
+    std::cerr << "  --help              Print this message." << std::endl;
+    std::cerr << "  --prefix=<string>   Prepend <string> to all renamed symbols." << std::endl;
+    std::cerr << "  --salt=<string>     Add <string> as salt of renaming encryption." << std::endl;
+}
+
+int main(int argc, const char** argv) {
+    CommandLine cmdl(argc, argv);
+
+    if (cmdl.HasSwitch("help")) {
+        Usage(cmdl);
+        return 0;
+    }
+
+    std::string prefix = "CXXSR_";
+    std::string salt;
+
+    if (cmdl.HasSwitch("prefix")) {
+        prefix = cmdl.GetSwitchValue("prefix");
+    }
+
+    if (cmdl.HasSwitch("salt")) {
+        salt = cmdl.GetSwitchValue("salt");
+    }
+
     std::vector<char> outbuf(2048);
     std::map<std::string, Meta> symbol_map;
     std::set<std::string> all_source_names;
@@ -47,15 +76,15 @@ int main() {
     std::set<size_t> seen_hash;
     std::hash<std::string> hasher;
     for (auto &n : all_source_names) {
-        auto hv = hasher(n);
-        int key_range = 10 * all_source_names.size();
+        auto hv = hasher(n + salt);
+        int key_range = 100 * all_source_names.size();
         while (seen_hash.count(hv % key_range)) {
             key_range *= 2;
         }
         hv %= key_range;
         seen_hash.insert(hv);
         std::stringstream ss;
-        ss << "CXXSR_" <<  hv;
+        ss << prefix << std::hex << hv;
         auto encoded = ss.str();
         ss.str("");
         ss.clear();
